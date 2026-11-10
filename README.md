@@ -25,6 +25,19 @@ Semua angka dihitung langsung dari tab **Data** di Google Sheets, dibaca ulang s
 - Tombol **Ganti spreadsheet** memungkinkan memakai salinan lain; pilihan itu hanya tersimpan di browser pengguna.
 - Bila spreadsheet tidak bisa dibaca (privat, terhapus, tab/kolom berubah), dashboard menampilkan pesan penyebab dan tombol **Coba lagi**.
 
+## Status SLA
+
+- Dihitung oleh dashboard dari kolom **Tanggal Input** dan baris **SLA** di sheet Data (target kumulatif hari kerja per item,
+  misalnya 3, 8, 12, … 85). Format durasi per item (`3 HK`, `5 HK`, …) juga dikenali.
+- Hari kerja = Senin–Jumat di luar libur nasional dan cuti bersama (daftar di `src/config.js` → `HOLIDAYS`;
+  tambahkan tanggal tahun berikutnya setelah SKB 3 Menteri terbit).
+- Untuk usulan yang masih berjalan (belum ada keputusan akhir), posisi saat ini = item pertama yang belum `Yes` pada tahap
+  aktif. Sisa = target kumulatif item tersebut − hari kerja sejak Tanggal Input.
+  - **On Schedule**: sisa > 2 hari kerja
+  - **Warning**: sisa 1–2 hari kerja (atur di `WARNING_DAYS`)
+  - **Due Date**: sisa ≤ 0 (jatuh tempo hari ini atau sudah lewat)
+- Usulan dengan keputusan `Tidak Lanjut` atau keputusan final `Lanjut` dihitung **Selesai**.
+
 ## Pengembangan lokal
 
 ```bash

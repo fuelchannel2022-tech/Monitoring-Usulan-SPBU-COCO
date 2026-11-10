@@ -6,6 +6,9 @@
 //   - an optional row whose Region cell is "SLA" holds the SLA target per item
 //   - every other row with a Region value is a proposal
 
+import { WARNING_DAYS } from '../config.js'
+import { parseDate, workdaysBetween, addWorkdays, startOfDay } from './workdays.js'
+
 export const STAGES = [
   { n: 'Kajian Awal' },
   { n: 'Kajian Lanjutan' },
@@ -47,6 +50,7 @@ export function detectLayout(values) {
   const kecCol = find(/^kecamatan/, regCol + 1)
   const cityCol = find(/^kota/, regCol + 2)
   const provCol = find(/^provinsi/, regCol + 3)
+  const dateCol = find(/^tanggal/, -1)
 
   const ir = values.findIndex((r, i) => i >= hr && r.filter((c) => ITEM_RE.test(norm(c))).length >= 8)
   if (ir < 0) throw new LayoutError('Baris judul item (1.1 – 4.5) tidak ditemukan di sheet Data.')
@@ -61,14 +65,28 @@ export function detectLayout(values) {
   })
   const labels = stages.map((s) => s.cols.map((c) => norm(itemRow[c])))
   const firstData = Math.max(hr, ir) + 1
-  return { hr, ir, firstData, regCol, kecCol, cityCol, provCol, stages, labels }
+  return { hr, ir, firstData, regCol, kecCol, cityCol, provCol, dateCol, stages, labels }
 }
 
 export function analyse(values) {
   const L = detectLayout(values)
   const rows = values.slice(L.firstData)
   const slaRow = rows.find((r) => low(r[L.regCol]) === 'sla')
-  const sla = L.stages.map((s) => s.cols.map((c) => (slaRow ? norm(slaRow[c]) : '')))
+  // SLA row: either cumulative working days per item (3, 8, 12, …) or per-item durations ("3 HK", "5 HK", …).
+  const rawSla = L.stages.map((s) => s.cols.map((c) => {
+    const m = slaRow ? norm(slaRow[c]).match(/-?\d+(?:[.,]\d+)?/) : null
+    return m ? Number(m[0].replace(',', '.')) : null
+  }))
+  const flat = rawSla.flat()
+  const hasSla = flat.length > 0 && flat.every((v) => v != null)
+  const isCumulative = hasSla && flat.every((v, i) => i === 0 || v >= flat[i - 1])
+  let run = 0
+  const cum = rawSla.map((st) => st.map((v) => { if (v == null) return null; run = isCumulative ? v : run + v; return run }))
+  let prev = 0
+  const dur = cum.map((st) => st.map((c) => { if (c == null) return null; const d = c - prev; prev = c; return d }))
+  const totalSla = hasSla ? cum[3][cum[3].length - 1] : null
+  const sla = dur.map((st) => st.map((d) => (d == null ? '' : `${d} HK`)))
+  const today = startOfDay(new Date())
 
   const recs = rows
     .filter((r) => norm(r[L.regCol]) && low(r[L.regCol]) !== 'sla')
@@ -83,8 +101,32 @@ export function analyse(values) {
         const i = cells[k].indexOf('n')
         if (i >= 0 && dec[k] !== 'l') stop = L.labels[k][i]
       }
+      // SLA status for proposals that are still running
+      const inputDate = L.dateCol >= 0 ? parseDate(r[L.dateCol]) : null
+      const closed = dec.some((d, k) => entered[k] && d === 't') || dec.every((d) => d === 'l')
+      let slaInfo = { status: closed ? 'done' : 'na' }
+      if (!closed && hasSla && inputDate) {
+        const k = entered.reduce((acc, e, i) => (e && dec[i] === 'p' ? (acc < 0 ? i : acc) : acc), -1)
+        if (k >= 0) {
+          let i = cells[k].findIndex((c) => c !== 'y')
+          if (i < 0) i = cells[k].length - 1
+          const target = cum[k][i]
+          const elapsed = workdaysBetween(inputDate, today)
+          const remaining = target - elapsed
+          slaInfo = {
+            status: remaining <= 0 ? 'due' : remaining <= WARNING_DAYS ? 'warn' : 'on',
+            stage: k, item: L.labels[k][i], target, elapsed, remaining,
+            itemDue: addWorkdays(inputDate, target),
+            finalDue: addWorkdays(inputDate, totalSla),
+          }
+        }
+      } else if (!closed && !inputDate) {
+        slaInfo = { status: 'na', reason: 'Tanggal Input kosong' }
+      }
       return {
         id: idx,
+        inputDate,
+        sla: slaInfo,
         region: canonRegion(r[L.regCol]),
         kec: norm(r[L.kecCol]),
         city: city(r[L.cityCol]),
@@ -95,7 +137,7 @@ export function analyse(values) {
         fin: dec.every((d) => d === 'l'),
       }
     })
-  return { recs, labels: L.labels, sla }
+  return { recs, labels: L.labels, sla, totalSla, hasDate: L.dateCol >= 0 }
 }
 
 export const pct = (a, b) => (b ? (a / b) * 100 : 0)

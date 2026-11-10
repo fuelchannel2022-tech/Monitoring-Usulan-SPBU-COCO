@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { STAGES, REGIONS } from '../lib/analyse.js'
+import SlaPanel, { SlaPill } from './SlaPanel.jsx'
 
 const pct0 = (a, b) => (b ? Math.round((a / b) * 100) : 0)
 
@@ -59,7 +60,7 @@ function StageCard({ k, R, labels, sla, filter }) {
               return (
                 <div className="it" key={lb + i}>
                   <div className="lbl">
-                    <span>{lb}{sla?.[k]?.[i] ? <em className="sla">SLA {sla[k][i]}</em> : null}</span>
+                    <span>{lb}{sla?.[k]?.[i] ? <em className="slatag">SLA {sla[k][i]}</em> : null}</span>
                     <span>{y} Yes · {n} No</span>
                   </div>
                   <div className="split"><i className="y" style={{ width: w(y) + '%' }} /><i className="n" style={{ width: w(n) + '%' }} /></div>
@@ -82,9 +83,12 @@ function StageCard({ k, R, labels, sla, filter }) {
                 return (
                   <li key={r.id}>
                     <span className="nm"><b>{r.city || r.kec}</b><small>{r.region} · {r.prov}{why}</small></span>
-                    {d === 'l' ? <span className="pill l">Lanjut</span>
-                      : d === 't' ? <span className="pill t">Tidak lanjut</span>
-                      : <span className="pill p">Proses</span>}
+                    <span className="pills">
+                      {d === 'p' && r.sla.stage === k && <SlaPill s={r.sla} />}
+                      {d === 'l' ? <span className="pill l">Lanjut</span>
+                        : d === 't' ? <span className="pill t">Tidak lanjut</span>
+                        : <span className="pill p">Proses</span>}
+                    </span>
                   </li>
                 )
               })}
@@ -98,7 +102,7 @@ function StageCard({ k, R, labels, sla, filter }) {
 
 export default function StageDashboard({ data }) {
   const [filter, setFilter] = useState('Semua')
-  const { recs, labels, sla } = data
+  const { recs, labels, sla, totalSla, hasDate } = data
 
   const options = useMemo(() => {
     const present = new Set(recs.map((r) => r.region))
@@ -127,6 +131,7 @@ export default function StageDashboard({ data }) {
         <span><i style={{ background: 'var(--maroon-mid)' }} />Masih proses (belum ada keputusan)</span>
         <span><i style={{ background: 'var(--grey-soft)' }} />Belum diisi</span>
       </div>
+      <SlaPanel R={R} totalSla={totalSla} hasDate={hasDate} />
       <div className="stages">
         {STAGES.map((_, k) => <StageCard key={k} k={k} R={R} labels={labels} sla={sla} filter={active} />)}
       </div>
