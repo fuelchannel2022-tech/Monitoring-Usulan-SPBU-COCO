@@ -3,7 +3,7 @@ import StageDashboard from './components/StageDashboard.jsx'
 import SlideView from './components/SlideView.jsx'
 import SheetSetup from './components/SheetSetup.jsx'
 import { analyse, fmtTime } from './lib/analyse.js'
-import { fetchSheetValues, loadSheetId, saveSheetId } from './lib/sheet.js'
+import { fetchSheetValues, loadSheetId, saveSheetId, defaultSheetId } from './lib/sheet.js'
 import danantara from './assets/danantara.png'
 import pertamina from './assets/pertamina.png'
 
@@ -60,7 +60,12 @@ export default function App() {
   const [editing, setEditing] = useState(false)
   const [view, setView] = useState(viewFromHash)
   const { values, status, updatedAt, loading, reload } = useSheet(sheetId)
-  const data = useMemo(() => (values ? analyse(values) : null), [values])
+  const { data, parseError } = useMemo(() => {
+    if (!values) return { data: null, parseError: '' }
+    try { return { data: analyse(values), parseError: '' } }
+    catch (e) { return { data: null, parseError: e.message || 'Struktur sheet Data tidak dikenali.' } }
+  }, [values])
+  const errorText = parseError || (status.kind === 'err' ? status.text : '')
 
   useEffect(() => {
     const on = () => setView(viewFromHash())
@@ -88,7 +93,7 @@ export default function App() {
             <button key={v.id} type="button" className="tabbtn" aria-current={view === v.id ? 'page' : undefined} onClick={() => go(v.id)}>{v.label}</button>
           ))}
         </nav>
-        {sheetId && (
+        {(
           <div className="status">
             <span className={'dot ' + status.kind} />
             <span>{status.text || 'Menghubungkan ke Google Sheets…'}</span>
@@ -98,15 +103,31 @@ export default function App() {
         )}
       </div>
 
-      {(!sheetId || editing) && (
-        <SheetSetup current={sheetId} onSave={saveId} onCancel={sheetId ? () => setEditing(false) : null} />
+      {editing && (
+        <SheetSetup current={sheetId} isDefault={sheetId === defaultSheetId()}
+          onSave={saveId} onReset={() => saveId(defaultSheetId())} onCancel={() => setEditing(false)} />
       )}
 
-      {sheetId && !editing && !data && (
-        <div className="placeholder">{status.kind === 'err' ? status.text : 'Memuat data dari spreadsheet…'}</div>
+      {!editing && !data && (
+        errorText ? (
+          <div className="placeholder error" role="alert">
+            <h2>Data belum bisa ditampilkan</h2>
+            <p>{errorText}</p>
+            <div className="row">
+              <button type="button" className="btn primary" onClick={reload} disabled={loading}>Coba lagi</button>
+              <button type="button" className="btn" onClick={() => setEditing(true)}>Ganti spreadsheet</button>
+            </div>
+          </div>
+        ) : (
+          <div className="placeholder" aria-live="polite">Memuat data dari spreadsheet…</div>
+        )
       )}
 
-      {sheetId && !editing && data && (
+      {!editing && data && parseError === '' && status.kind === 'err' && (
+        <div className="notice" role="status">{status.text}</div>
+      )}
+
+      {!editing && data && (
         view === 'ringkasan'
           ? <SlideView data={data} updatedAt={updatedAt} />
           : <StageDashboard data={data} />

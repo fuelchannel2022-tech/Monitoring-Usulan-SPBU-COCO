@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { extractSheetId } from '../lib/sheet.js'
 
-export default function SheetSetup({ current, onSave, onCancel }) {
+export default function SheetSetup({ current, isDefault, onSave, onReset, onCancel }) {
   const [value, setValue] = useState(current ? `https://docs.google.com/spreadsheets/d/${current}/edit` : '')
   const [error, setError] = useState('')
 
@@ -15,10 +15,10 @@ export default function SheetSetup({ current, onSave, onCancel }) {
 
   return (
     <section className="setup">
-      <h2>Sambungkan spreadsheet</h2>
+      <h2>Ganti spreadsheet</h2>
       <p>
-        Tempel link Google Sheets <b>Dashboard Monitoring Usulan SPBU COCO</b>. Link disimpan hanya di browser ini,
-        tidak ditulis ke kode atau repository.
+        Dashboard memakai spreadsheet <b>Dashboard Monitoring Usulan SPBU COCO</b> secara default.
+        Tempel link lain hanya bila ingin melihat salinan spreadsheet; pilihan ini disimpan di browser ini saja.
       </p>
       <form onSubmit={submit}>
         <label htmlFor="sheetLink">Link Google Sheets</label>
@@ -27,12 +27,13 @@ export default function SheetSetup({ current, onSave, onCancel }) {
         {error && <p className="err">{error}</p>}
         <div className="row">
           <button type="submit" className="btn primary">Simpan &amp; tampilkan</button>
-          {onCancel && <button type="button" className="btn" onClick={onCancel}>Batal</button>}
+          {!isDefault && <button type="button" className="btn" onClick={onReset}>Pakai spreadsheet utama</button>}
+          <button type="button" className="btn" onClick={onCancel}>Batal</button>
         </div>
       </form>
       <ol className="hint">
         <li>Spreadsheet harus dibagikan sebagai <b>“Siapa saja yang memiliki link: Viewer”</b> agar bisa dibaca dari GitHub Pages.</li>
-        <li>Data dibaca dari tab bernama <b>Data</b> (baris 1–2 judul, data mulai baris 3).</li>
+        <li>Tab <b>Data</b> harus punya kolom <b>Region</b> dan judul item <b>1.1 – 4.5</b>; kolom keputusan berada tepat setelah item terakhir tiap tahap.</li>
       </ol>
     </section>
   )

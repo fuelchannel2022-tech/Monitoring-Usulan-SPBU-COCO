@@ -1,10 +1,8 @@
-// Reads the "Data" tab of a Google Sheet through Google's public CSV endpoint (gviz).
-// Works without an API key, but only when the spreadsheet is shared as
-// "Anyone with the link: Viewer". Nothing secret is stored in the code.
+// Reads the "Data" tab of the Google Sheet through Google's public CSV endpoint (gviz).
+// Works without an API key while the spreadsheet is shared as "Anyone with the link".
+import { DEFAULT_SHEET_ID, SHEET_GID, SHEET_TAB } from '../config.js'
 
 const STORAGE_KEY = 'coco.sheetId'
-export const SHEET_TAB = 'Data'
-export const SHEET_RANGE = 'A1:AC1000'
 
 /** Extracts the spreadsheet ID from a full Google Sheets link or returns the ID as-is. */
 export function extractSheetId(input) {
@@ -14,18 +12,20 @@ export function extractSheetId(input) {
   return /^[a-zA-Z0-9-_]{20,}$/.test(s) ? s : ''
 }
 
-/** Sheet ID priority: the one saved in this browser, then the optional build-time variable. */
+export const defaultSheetId = () => extractSheetId(import.meta.env.VITE_SHEET_ID || '') || DEFAULT_SHEET_ID
+
+/** A sheet chosen in this browser overrides the default; otherwise the project's sheet is used. */
 export function loadSheetId() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) return saved
   } catch { /* storage blocked: fall through */ }
-  return extractSheetId(import.meta.env.VITE_SHEET_ID || '')
+  return defaultSheetId()
 }
 
 export function saveSheetId(id) {
   try {
-    if (id) localStorage.setItem(STORAGE_KEY, id)
+    if (id && id !== defaultSheetId()) localStorage.setItem(STORAGE_KEY, id)
     else localStorage.removeItem(STORAGE_KEY)
   } catch { /* ignore */ }
 }
@@ -57,20 +57,24 @@ export class SheetError extends Error {
   constructor(code, message) { super(message); this.code = code }
 }
 
+export function sheetCsvUrl(sheetId, useGid = true) {
+  const sel = useGid && sheetId === defaultSheetId() ? `gid=${SHEET_GID}` : `sheet=${encodeURIComponent(SHEET_TAB)}`
+  return `https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/gviz/tq?tqx=out:csv&headers=0&${sel}&_=${Date.now()}`
+}
+
 export async function fetchSheetValues(sheetId, signal) {
-  const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/gviz/tq` +
-    `?tqx=out:csv&headers=0&sheet=${encodeURIComponent(SHEET_TAB)}&range=${SHEET_RANGE}&_=${Date.now()}`
   let res
   try {
-    res = await fetch(url, { signal, cache: 'no-store' })
+    res = await fetch(sheetCsvUrl(sheetId), { signal, cache: 'no-store' })
   } catch (e) {
     if (e.name === 'AbortError') throw e
-    // A private sheet redirects to a Google sign-in page, which the browser blocks (CORS).
-    throw new SheetError('unreachable', 'Spreadsheet tidak bisa dibaca. Pastikan dibagikan sebagai "Siapa saja yang memiliki link: Viewer" dan koneksi internet aktif.')
+    // A private sheet redirects to Google sign-in, which the browser blocks (CORS) and reports as a network error.
+    throw new SheetError('unreachable',
+      'Spreadsheet tidak bisa dibaca. Pastikan file dibagikan sebagai "Siapa saja yang memiliki link" dan koneksi internet aktif.')
   }
   if (!res.ok) {
     throw new SheetError(res.status === 404 ? 'not_found' : 'http',
-      res.status === 404 ? 'Spreadsheet tidak ditemukan. Periksa kembali link-nya.' : `Google Sheets menolak permintaan (HTTP ${res.status}).`)
+      res.status === 404 ? 'Spreadsheet tidak ditemukan. Periksa ID spreadsheet.' : `Google Sheets menolak permintaan (HTTP ${res.status}).`)
   }
   const text = await res.text()
   if (/^\s*</.test(text)) {

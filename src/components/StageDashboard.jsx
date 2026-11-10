@@ -37,7 +37,7 @@ function Funnel({ R }) {
   )
 }
 
-function StageCard({ k, R, labels, filter }) {
+function StageCard({ k, R, labels, sla, filter }) {
   const s = STAGES[k]
   const In = R.filter((r) => r.entered[k])
   const w = (x) => (In.length ? (x / In.length) * 100 : 0)
@@ -58,7 +58,10 @@ function StageCard({ k, R, labels, filter }) {
               const n = In.filter((r) => r.cells[k][i] === 'n').length
               return (
                 <div className="it" key={lb + i}>
-                  <div className="lbl"><span>{lb}</span><span>{y} Yes · {n} No</span></div>
+                  <div className="lbl">
+                    <span>{lb}{sla?.[k]?.[i] ? <em className="sla">SLA {sla[k][i]}</em> : null}</span>
+                    <span>{y} Yes · {n} No</span>
+                  </div>
                   <div className="split"><i className="y" style={{ width: w(y) + '%' }} /><i className="n" style={{ width: w(n) + '%' }} /></div>
                 </div>
               )
@@ -95,7 +98,7 @@ function StageCard({ k, R, labels, filter }) {
 
 export default function StageDashboard({ data }) {
   const [filter, setFilter] = useState('Semua')
-  const { recs, labels } = data
+  const { recs, labels, sla } = data
 
   const options = useMemo(() => {
     const present = new Set(recs.map((r) => r.region))
@@ -125,7 +128,7 @@ export default function StageDashboard({ data }) {
         <span><i style={{ background: 'var(--grey-soft)' }} />Belum diisi</span>
       </div>
       <div className="stages">
-        {STAGES.map((_, k) => <StageCard key={k} k={k} R={R} labels={labels} filter={active} />)}
+        {STAGES.map((_, k) => <StageCard key={k} k={k} R={R} labels={labels} sla={sla} filter={active} />)}
       </div>
     </div>
   )

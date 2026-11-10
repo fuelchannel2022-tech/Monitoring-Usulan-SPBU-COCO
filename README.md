@@ -14,18 +14,16 @@ Semua angka dihitung langsung dari tab **Data** di Google Sheets, dibaca ulang s
 
 ## Sumber data
 
-GitHub Pages tidak punya server, jadi aplikasi membaca spreadsheet lewat endpoint CSV publik Google (`gviz`), tanpa API key.
-
-1. Spreadsheet harus dibagikan sebagai **"Siapa saja yang memiliki link: Viewer"**.
-2. Saat pertama dibuka, tempel link spreadsheet di layar **Sambungkan spreadsheet**. Link disimpan di browser pengguna
-   (localStorage), **tidak** ditulis ke repository.
-3. Opsional: isi variabel `VITE_SHEET_ID` (Settings → Secrets and variables → Actions → Variables) agar link tidak perlu
-   ditempel. Catatan: nilai ini ikut masuk ke file JavaScript yang terbit, sehingga bisa dilihat siapa pun yang membuka situs.
-
-Format sheet yang diharapkan: baris 1 judul tahap, baris 2 judul item (1.1 … 4.5), data mulai baris 3.
-Kolom A Region, B Kecamatan, C Kota/Kab, D Provinsi, G–J item Tahap 1, K keputusan Tahap 1, L–P item Tahap 2,
-Q keputusan Tahap 2, R–V item Tahap 3, W keputusan Tahap 3, X–AB item Tahap 4, AC keputusan final.
-Nilai item `Yes`/`No`, nilai keputusan `Lanjut`/`Tidak Lanjut` (kosong = masih proses).
+- Spreadsheet: **Dashboard Monitoring Usulan SPBU COCO**, tab **Data** (`gid=0`). ID diatur di `src/config.js`.
+- Dibaca lewat endpoint CSV publik Google (`/gviz/tq?tqx=out:csv&headers=0&gid=0`) tanpa API key, sehingga file harus
+  dibagikan sebagai **"Siapa saja yang memiliki link"**. Gunakan peran **Viewer** (jangan Editor), karena ID spreadsheet
+  ada di kode publik.
+- Kolom dicari berdasarkan **judul header**, bukan posisi: `Region`, `Kecamatan`, `Kota/Kab`, `Provinsi`, item `1.1`–`4.5`
+  (baris judul item), dan kolom keputusan tepat setelah item terakhir setiap tahap. Baris dengan Region = `SLA` dibaca
+  sebagai target SLA per item. Menambah atau menggeser kolom tidak merusak dashboard selama judul ini tetap ada.
+- Nilai item `Yes`/`No`; nilai keputusan `Lanjut`/`Tidak Lanjut` (kosong = masih proses).
+- Tombol **Ganti spreadsheet** memungkinkan memakai salinan lain; pilihan itu hanya tersimpan di browser pengguna.
+- Bila spreadsheet tidak bisa dibaca (privat, terhapus, tab/kolom berubah), dashboard menampilkan pesan penyebab dan tombol **Coba lagi**.
 
 ## Pengembangan lokal
 
@@ -42,5 +40,5 @@ Sekali saja: Settings → Pages → Source: **GitHub Actions**.
 
 ## Keamanan
 
-Repository dan situs ini publik. Kode tidak berisi API key, token, ID spreadsheet, atau data SPBU.
+Repository dan situs ini publik. Kode tidak berisi API key, token, atau data SPBU; hanya ID spreadsheet publik di `src/config.js`.
 Data hanya dibaca dari spreadsheet saat halaman dibuka. Siapa pun yang punya link spreadsheet yang dibagikan publik dapat membacanya.
