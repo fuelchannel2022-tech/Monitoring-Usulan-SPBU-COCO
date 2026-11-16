@@ -1,44 +1,37 @@
 # Monitoring Usulan SPBU COCO
 
-Dashboard React + Vite untuk memantau usulan SPBU COCO dari Tahap 1 (Kajian Awal) sampai Tahap 4 (Eksekusi).
-Diterbitkan otomatis ke GitHub Pages: https://fuelchannel2022-tech.github.io/Monitoring-Usulan-SPBU-COCO/
+Dashboard pemantauan usulan SPBU COCO dari Tahap 1 (Kajian Awal) sampai Tahap 4 (Eksekusi), lengkap dengan status SLA.
+Terbit otomatis ke GitHub Pages: https://fuelchannel2022-tech.github.io/Monitoring-Usulan-SPBU-COCO/
 
-## Isi aplikasi
+Tampilan dan logika sama dengan dashboard "Dashboard 4 Tahap SPBU COCO" di Claude.
 
-- **Dashboard 4 Tahap** (`#tahap`): filter region (dropdown), kartu alur 4 tahap (masuk / lanjut / tidak lanjut / proses),
-  dan panel per tahap berisi status setiap item pekerjaan serta daftar lokasi.
-- **Ringkasan (Slide)** (`#ringkasan`): slide 16:9 berisi funnel, grafik usulan per region, temuan utama, dan tindak lanjut.
-  Tombol **Presentasikan** membuka slide layar penuh.
+## Isi halaman
 
-Semua angka dihitung langsung dari tab **Data** di Google Sheets, dibaca ulang setiap 2 menit dan saat tombol **Muat ulang data** ditekan.
+- Banner foto SPBU dengan logo, ringkasan, filter **Region**, pencarian **No SPBU**, dan tombol **Muat ulang data**.
+- 4 kartu tahap (ikon 3D maroon): usulan masuk, lanjut / tidak lanjut, jumlah overdue SLA.
+- **Status SLA**: On Schedule, Warning, Due Date; tabel per tahap (usulan masuk, lanjut, tidak lanjut, status SLA, kepatuhan SLA);
+  daftar overdue.
+- Panel detail dengan dropdown **Tahap**; klik sub tahapan untuk melihat status setiap lokasi.
 
-## Sumber data
+## Sumber data (selalu mengikuti spreadsheet)
 
-- Spreadsheet: **Dashboard Monitoring Usulan SPBU COCO**, tab **Data** (`gid=0`). ID diatur di `src/config.js`.
-- Dibaca lewat endpoint CSV publik Google (`/gviz/tq?tqx=out:csv&headers=0&gid=0`) tanpa API key, sehingga file harus
-  dibagikan sebagai **"Siapa saja yang memiliki link"**. Gunakan peran **Viewer** (jangan Editor), karena ID spreadsheet
-  ada di kode publik.
-- Kolom dicari berdasarkan **judul header**, bukan posisi: `Region`, `Kecamatan`, `Kota/Kab`, `Provinsi`, item `1.1`–`4.5`
-  (baris judul item), dan kolom keputusan tepat setelah item terakhir setiap tahap. Baris dengan Region = `SLA` dibaca
-  sebagai target SLA per item. Menambah atau menggeser kolom tidak merusak dashboard selama judul ini tetap ada.
-- Nilai item `Yes`/`No`; nilai keputusan `Lanjut`/`Tidak Lanjut` (kosong = masih proses).
-- Tombol **Ganti spreadsheet** memungkinkan memakai salinan lain; pilihan itu hanya tersimpan di browser pengguna.
-- Bila spreadsheet tidak bisa dibaca (privat, terhapus, tab/kolom berubah), dashboard menampilkan pesan penyebab dan tombol **Coba lagi**.
+- Spreadsheet: **Dashboard Monitoring Usulan SPBU COCO** (ID di `index.html`, konstanta `SHEET_ID`).
+- Tab **Data** (`gid=0`) dan tab **Libur** (`gid=510003`) dibaca sebagai CSV publik saat halaman dibuka,
+  lalu setiap 2 menit dan setiap kali tab browser aktif kembali. Tidak memakai API key.
+- Spreadsheet harus dibagikan **"Siapa saja yang memiliki link"**. Gunakan peran **Viewer**, karena ID spreadsheet ada di kode publik.
+- Kolom dibaca berdasarkan judul: `Region`, `Kecamatan`, `Kota/Kab`, `Provinsi`, `Tanggal Input`, item `1.1`–`4.5`,
+  kolom keputusan tepat setelah item terakhir tiap tahap, baris `SLA` (SLA kumulatif hari kerja), dan `No` / `No SPBU` untuk pencarian.
+- Isi item: **tanggal selesai** (kosong / Pending = belum selesai).
 
-## Status SLA
+## Aturan SLA
 
-- Dihitung oleh dashboard dari kolom **Tanggal Input** dan baris **SLA** di sheet Data (target kumulatif hari kerja per item,
-  misalnya 3, 8, 12, … 85). Format durasi per item (`3 HK`, `5 HK`, …) juga dikenali.
-- Hari kerja = Senin–Jumat di luar libur nasional dan cuti bersama (daftar di `src/config.js` → `HOLIDAYS`;
-  tambahkan tanggal tahun berikutnya setelah SKB 3 Menteri terbit).
-- Untuk usulan yang masih berjalan (belum ada keputusan akhir), posisi saat ini = item pertama yang belum `Yes` pada tahap
-  aktif. Sisa = target kumulatif item tersebut − hari kerja sejak Tanggal Input.
-  - **On Schedule**: sisa > 2 hari kerja
-  - **Warning**: sisa 1–2 hari kerja (atur di `WARNING_DAYS`)
-  - **Due Date**: sisa ≤ 0 (jatuh tempo hari ini atau sudah lewat)
-- Usulan dengan keputusan `Tidak Lanjut` atau keputusan final `Lanjut` dihitung **Selesai**.
+- Batas SLA item = Tanggal Input + SLA kumulatif (hari kerja; akhir pekan dan tanggal di tab **Libur** tidak dihitung).
+- Belum selesai: **On Schedule** (sisa > 2 HK), **Warning** (H-2 s.d. hari H), **Due Date** (melewati batas SLA).
+- Sudah selesai: tepat waktu / terlambat → **Kepatuhan SLA** per tahap.
+- Keputusan tahap "Tidak Lanjut" → item yang belum selesai dianggap dihentikan (bukan overdue).
+- Usulan dihitung masuk Tahap 1 jika Tanggal Input terisi.
 
-## Pengembangan lokal
+## Pengembangan & rilis
 
 ```bash
 npm install
@@ -46,12 +39,9 @@ npm run dev      # http://localhost:5173/Monitoring-Usulan-SPBU-COCO/
 npm run build    # hasil di dist/
 ```
 
-## Rilis
-
-Setiap push ke branch `main` menjalankan `.github/workflows/deploy.yml` (build lalu deploy ke GitHub Pages).
-Sekali saja: Settings → Pages → Source: **GitHub Actions**.
+Setiap push ke `main` menjalankan `.github/workflows/deploy.yml` (build lalu deploy ke GitHub Pages).
+Perubahan isi spreadsheet tidak perlu push: halaman membaca data terbaru langsung dari Google Sheets.
 
 ## Keamanan
 
-Repository dan situs ini publik. Kode tidak berisi API key, token, atau data SPBU; hanya ID spreadsheet publik di `src/config.js`.
-Data hanya dibaca dari spreadsheet saat halaman dibuka. Siapa pun yang punya link spreadsheet yang dibagikan publik dapat membacanya.
+Repository dan situs ini publik. Tidak ada API key atau token di kode. Data dibaca dari spreadsheet yang dibagikan lewat link.

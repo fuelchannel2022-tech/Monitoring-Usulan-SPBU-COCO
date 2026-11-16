@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
 
+// Dashboard berupa satu halaman HTML (index.html); Vite hanya menyalin & mengoptimalkannya untuk GitHub Pages.
 export default defineConfig({
-  plugins: [react()],
   base: '/Monitoring-Usulan-SPBU-COCO/',
 })
