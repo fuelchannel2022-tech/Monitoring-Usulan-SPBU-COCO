@@ -7,7 +7,7 @@ Tampilan dan logika sama dengan dashboard "Dashboard 4 Tahap SPBU COCO" di Claud
 
 ## Isi halaman
 
-- Banner foto SPBU dengan logo, ringkasan, filter **Region**, pencarian **No SPBU**, dan tombol **Muat ulang data**.
+- Banner foto SPBU dengan logo, ringkasan, filter **Region**, pencarian **Kabupaten/Kota**, dan tombol **Muat ulang data**.
 - 4 kartu tahap (ikon 3D maroon): usulan masuk, lanjut / tidak lanjut, jumlah overdue SLA.
 - **Status SLA**: On Schedule, Warning, Due Date; tabel per tahap (usulan masuk, lanjut, tidak lanjut, status SLA, kepatuhan SLA);
   daftar overdue.
@@ -20,7 +20,7 @@ Tampilan dan logika sama dengan dashboard "Dashboard 4 Tahap SPBU COCO" di Claud
   lalu setiap 2 menit dan setiap kali tab browser aktif kembali. Tidak memakai API key.
 - Spreadsheet harus dibagikan **"Siapa saja yang memiliki link"**. Gunakan peran **Viewer**, karena ID spreadsheet ada di kode publik.
 - Kolom dibaca berdasarkan judul: `Region`, `Kecamatan`, `Kota/Kab`, `Provinsi`, `Tanggal Input`, item `1.1`–`4.5`,
-  kolom keputusan tepat setelah item terakhir tiap tahap, baris `SLA` (SLA kumulatif hari kerja), dan `No` / `No SPBU` untuk pencarian.
+  kolom keputusan tepat setelah item terakhir tiap tahap, baris `SLA` (SLA kumulatif hari kerja). Pencarian mencocokkan kolom `Kota/Kab`.
 - Isi item: **tanggal selesai** (kosong / Pending = belum selesai).
 
 ## Aturan SLA

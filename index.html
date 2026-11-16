@@ -201,9 +201,9 @@ h4 .hint{font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted)
       <div class="ctl">
         <label for="regionSel">Region</label>
         <select id="regionSel"><option>Semua region</option></select>
-        <label for="spbuQ">Cari No SPBU</label>
+        <label for="spbuQ">Cari Kabupaten/Kota</label>
         <div class="srch"><svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="sq" x1="0" y1="0" x2=".4" y2="1"><stop offset="0" stop-color="#f3a7b2"/><stop offset=".45" stop-color="#a3283b"/><stop offset=".55" stop-color="#7a1424"/><stop offset="1" stop-color="#c9465a"/></linearGradient></defs><path d="M16.5 16.5L21 21" stroke="#4a0a15" stroke-width="3.4" stroke-linecap="round"/><path d="M16.5 16.5L21 21" stroke="url(#sq)" stroke-width="2.4" stroke-linecap="round"/><circle cx="11" cy="11" r="7" fill="#fbeef0" stroke="url(#sq)" stroke-width="2.8"/><circle cx="11" cy="11" r="7" fill="none" stroke="#5c0f1d" stroke-width=".6"/><path d="M7 9a5 5 0 0 1 4-3.4" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
-          <input id="spbuQ" type="search" inputmode="search" autocomplete="off" placeholder="mis. 3 atau 44.532.26"><button type="button" id="spbuClr" class="clr" hidden aria-label="Hapus pencarian">×</button></div>
+          <input id="spbuQ" type="search" inputmode="search" autocomplete="off" placeholder="mis. Kendari atau Kab. Batang"><button type="button" id="spbuClr" class="clr" hidden aria-label="Hapus pencarian">×</button></div>
         <div class="status"><span class="dot" id="dot"></span><span id="statusText">Menghubungkan ke Google Sheets…</span></div>
         <div class="btns"><button class="btn" id="refreshBtn" type="button">Muat ulang data</button><button class="btn ghost" id="allowBtn" type="button" hidden>Izinkan akses</button></div>
       </div>
@@ -374,10 +374,9 @@ const slaPill=s=>s&&SLA_LBL[s.status]?`<span class="sp ${s.status}">${SLA_LBL[s.
 const sisa=r=>r>0?`${r} HK lagi`:r===0?"Hari ini":`Lewat ${-r} HK`;
 let tab=0, sub=-1, q="";
 const digits=s=>String(s||"").replace(/[^0-9]/g,"");
-// Cari No SPBU: angka dicocokkan ke kolom "No SPBU" (jika ada) atau kolom "No"; teks dicocokkan ke nama lokasi
-function matchQ(r){ if(!q) return true; const qd=digits(q);
-  if(qd&&qd.length===q.replace(/[\s.\-]/g,"").length){ return (r.spbu&&digits(r.spbu).includes(qd))||r.no===qd; }
-  const s=low(q); return [r.city,r.kec,r.prov,r.region,r.spbu].some(x=>low(x).includes(s)); }
+// Cari Kabupaten/Kota: dicocokkan ke kolom "Kota/Kab" (awalan Kota/Kab./Kabupaten diabaikan)
+const kk=s=>low(s).replace(/^(kota|kab\.?|kabupaten)\s+/,"");
+function matchQ(r){ if(!q) return true; const s=kk(q); return kk(r.city).includes(s); }
 const noTag=r=>r.spbu?`<i class="noid">${esc(r.spbu)}</i>`:r.no?`<i class="noid">No ${esc(r.no)}</i>`:"";
 
 function render(){
