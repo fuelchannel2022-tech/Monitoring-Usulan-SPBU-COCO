@@ -190,6 +190,12 @@ h4 .hint{font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted)
 .clr{background:linear-gradient(180deg,#fafbfc,#dcdfe4);box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.18)}
 .odl summary::before{border-color:#8b919a}
 @media (prefers-reduced-motion:reduce){.ico{transition:none}.kpi:hover .ico{transform:none}}
+.locs li.wide{flex-direction:column;align-items:stretch;gap:6px}
+.lrow{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.calc{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--muted);border-top:1px dashed #d9dbe0;padding-top:6px}
+.calc b{color:var(--ink);font-weight:600}.calc b.bad{color:var(--due)}
+.calc .res{font-weight:600}.calc .res.due,.calc .res.due b{color:var(--due)}.calc .res.warn,.calc .res.warn b{color:var(--warn)}.calc .res.on,.calc .res.on b{color:var(--on)}
+.locs{max-height:460px}
 </style>
 </head>
 <body>
@@ -370,7 +376,17 @@ function renderChips(){
     return `<option value="${esc(r)}"${r===filter?" selected":""}>${esc(r==="Semua"?"Semua region":r)} (${n})</option>`;}).join("");
 }
 const SLA_LBL={on:"On Schedule",warn:"Warning",due:"Due Date"};
-const slaPill=s=>s&&SLA_LBL[s.status]?`<span class="sp ${s.status}">${SLA_LBL[s.status]}${s.status==="due"?` · ${-s.rem} HK`:""}</span>`:"";
+// Hitungan hari SLA: sisa (kurang) atau lewat (lebih) dalam hari kerja
+const lk=rem=>rem<0?`Lebih ${-rem} HK`:rem===0?"Jatuh tempo hari ini":`Kurang ${rem} HK`;
+const slaPill=s=>s&&SLA_LBL[s.status]?`<span class="sp ${s.status}">${SLA_LBL[s.status]} · ${lk(s.rem)}</span>`:"";
+function calcLine(r,k){const s=r.stage[k];
+  if(!r.input) return `<div class="calc"><span>Tanggal Input belum diisi, SLA belum dihitung</span></div>`;
+  const comp=(s.ontime||s.late)?`<span>Item selesai: <b>${s.ontime||0} tepat waktu</b>${s.late?` · <b class="bad">${s.late} terlambat (lebih ${s.lateHK} HK)</b>`:""}</span>`:"";
+  if(s.status==="done") return `<div class="calc"><span>Semua item tahap ini selesai</span>${comp}</div>`;
+  if(s.status==="stop") return `<div class="calc"><span>Dihentikan (keputusan Tidak Lanjut)</span>${comp}</div>`;
+  if(!["on","warn","due"].includes(s.status)) return comp?`<div class="calc">${comp}</div>`:"";
+  return `<div class="calc"><span>Posisi <b>${esc(s.item)}</b></span><span>Input <b>${fmtD(r.input)}</b> + SLA <b>${s.target} HK</b> = batas <b>${fmtD(s.due)}</b></span>
+    <span>Berjalan <b>${r.elapsed} HK</b></span><span class="res ${s.status}">${s.rem<0?`Lebih <b>${-s.rem} HK</b> dari SLA`:s.rem===0?"<b>Hari ini batas SLA</b>":`Kurang <b>${s.rem} HK</b> menuju batas SLA`}</span>${comp}</div>`;}
 const sisa=r=>r>0?`${r} HK lagi`:r===0?"Hari ini":`Lewat ${-r} HK`;
 let tab=0, sub=-1, q="";
 const digits=s=>String(s||"").replace(/[^0-9]/g,"");
@@ -435,7 +451,7 @@ function render(){
   if(sub<0){
     locs=In.map(r=>{const d=r.dec[k];
       const pill=d==="l"?'<span class="dp l">Lanjut</span>':d==="t"?'<span class="dp t">Tidak lanjut</span>':'<span class="dp p">Proses</span>';
-      return `<li><span class="ln"><b>${noTag(r)}${esc(r.city||r.kec)}</b><small>${esc(r.region)} · ${esc(r.prov)}${r.stage[k].item?` · posisi ${esc(r.stage[k].item)}`:""}</small></span><span class="lp">${slaPill(r.stage[k])}${pill}</span></li>`;}).join("");
+      return `<li class="wide"><div class="lrow"><span class="ln"><b>${noTag(r)}${esc(r.city||r.kec)}</b><small>${esc(r.region)} · ${esc(r.prov)}</small></span><span class="lp">${slaPill(r.stage[k])}${pill}</span></div>${calcLine(r,k)}</li>`;}).join("");
   } else {
     const rows=In.map(r=>{
       const done=r.cells[k][sub]==="y", d=r.dates[k][sub], b=r.batas?r.batas[k][sub]:null;
@@ -443,9 +459,9 @@ function render(){
       if(done&&d&&b){const late=sod(d)>b; st=late?`<span class="sp due">Terlambat ${wdBetween(b,d)} HK</span>`:'<span class="sp on">Tepat waktu</span>'; ord=late?2:5;}
       else if(done){st='<span class="dp blue">Done</span>'; ord=6;}
       else if(r.dec[k]==="t"){st='<span class="dp t">Dihentikan</span>'; ord=7;}
-      else if(b&&r.elapsed!=null){const rem=cumOf(k,sub)-r.elapsed, s=slaStatus(rem); st=`<span class="sp ${s}">${SLA_LBL[s]}${s==="due"?` · ${-rem} HK`:s==="warn"?` · ${rem===0?"hari H":"H-"+rem}`:""}</span>`; ord=s==="due"?1:s==="warn"?3:4;}
+      else if(b&&r.elapsed!=null){const rem=cumOf(k,sub)-r.elapsed, s=slaStatus(rem); st=`<span class="sp ${s}">${SLA_LBL[s]} · ${lk(rem)}</span>`; ord=s==="due"?1:s==="warn"?3:4;}
       else {st='<span class="dp p">Belum ada tanggal input</span>'; ord=8;}
-      const info=done&&d?`Selesai ${fmtD(d)}`:b?`Batas SLA ${fmtD(b)}`:"";
+      const info=done&&d&&b?`Selesai ${fmtD(d)} · batas ${fmtD(b)} (SLA ${cumOf(k,sub)} HK)${sod(d)>b?` · lebih ${wdBetween(b,d)} HK`:` · ${wdBetween(d,b)} HK lebih cepat`}`:done&&d?`Selesai ${fmtD(d)}`:b?`Batas ${fmtD(b)} (SLA ${cumOf(k,sub)} HK) · berjalan ${r.elapsed} HK`:"";
       return {ord,html:`<li><span class="ln"><b>${noTag(r)}${esc(r.city||r.kec)}</b><small>${esc(r.region)}${info?` · ${info}`:""}</small></span><span class="lp">${st}</span></li>`};
     }).sort((a,b)=>a.ord-b.ord);
     locs=rows.map(x=>x.html).join("");
