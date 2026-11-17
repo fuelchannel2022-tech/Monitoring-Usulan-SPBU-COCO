@@ -36,8 +36,10 @@ Tampilan dan logika sama dengan dashboard "Dashboard 4 Tahap SPBU COCO" di Claud
 ```bash
 npm install
 npm run dev      # http://localhost:5173/Monitoring-Usulan-SPBU-COCO/
-npm run build    # hasil di dist/
+npm run build    # menyalin index.html apa adanya ke dist/ (tanpa diolah Vite)
 ```
+
+`index.html` diterbitkan byte per byte sama dengan halaman dashboard di Claude, jadi tampilannya identik.
 
 Setiap push ke `main` menjalankan `.github/workflows/deploy.yml` (build lalu deploy ke GitHub Pages).
 Perubahan isi spreadsheet tidak perlu push: halaman membaca data terbaru langsung dari Google Sheets.
