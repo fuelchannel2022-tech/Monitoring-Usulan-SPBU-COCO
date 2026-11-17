@@ -7,11 +7,13 @@ Tampilan dan logika sama dengan dashboard "Dashboard 4 Tahap SPBU COCO" di Claud
 
 ## Isi halaman
 
-- Banner foto SPBU dengan logo, ringkasan, filter **Region**, pencarian **Kabupaten/Kota**, dan tombol **Muat ulang data**.
-- 4 kartu tahap (ikon 3D maroon): usulan masuk, lanjut / tidak lanjut, jumlah overdue SLA.
-- **Status SLA**: On Schedule, Warning, Due Date; tabel per tahap (usulan masuk, lanjut, tidak lanjut, status SLA, kepatuhan SLA);
-  daftar overdue.
-- Panel detail dengan dropdown **Tahap**; klik sub tahapan untuk melihat status setiap lokasi.
+- Navigasi atas (Monitoring, Usulan, SLA, Laporan) dengan logo Danantara & Pertamina.
+- Banner foto SPBU, ringkasan, filter **Region**, pencarian **Kabupaten/Kota**, **Reset semua filter**, **Muat ulang data**.
+- 4 kartu tahap (ikon 3D maroon): usulan masuk, lanjut / tidak lanjut / proses, jumlah overdue SLA.
+- **Status SLA**: On Schedule, Warning, Due Date; tabel per tahap dengan kepatuhan SLA.
+- **Daftar overdue**: tabel dengan pencarian; klik baris untuk melihat hitungan SLA.
+- **Tahap**: dropdown tahap, sub tahapan dengan progress; klik sub tahapan untuk status setiap lokasi.
+- **Log Aktivitas**: disusun dari tanggal selesai item dan batas SLA di spreadsheet (tepat waktu, terlambat, SLA terlampaui).
 
 ## Sumber data (selalu mengikuti spreadsheet)
 
